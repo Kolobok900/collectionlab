@@ -2,6 +2,7 @@
 
 namespace App\Command;
 
+use App\Repository\PostRepository;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
@@ -9,8 +10,6 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
-use App\Repository\PostRepository;
-use Doctrine\Common\Collections\Criteria;
 use Symfony\Component\Console\Helper\Table;
 
 #[AsCommand(
@@ -39,18 +38,10 @@ class PostCommentCommand extends Command
         $option1 = $input->getOption('postID');
 
         $post = $this->postRepository->find($option1);
-
         if ($arg1 === 'filter') {
-            $comments = $post->getComments();
 
-            $criteria = Criteria::create()
-                ->where(Criteria::expr()->eq('isApproved', false));
+            $comments = $post->filterComment($option1);
 
-            $unapprovedComments = $comments->matching($criteria);
-
-            foreach ($unapprovedComments as $comment) {
-                $comments->removeElement($comment);
-            }
             $rows = [];
             foreach ($comments as $comment) {
                 $rows[] = [
@@ -65,13 +56,9 @@ class PostCommentCommand extends Command
             $table->setRows($rows);
             $table->render();
         }
+
         if ($arg1 === 'average') {
-            $comments = $post->getComments();
-            $totalLikes = 0;
-            foreach ($comments as $comment) {
-                $totalLikes += $comment->getLikes();
-            }
-            $average = $totalLikes / $comments->count();
+            $average = $post->averageComment($option1);
             $io->success('Среднее кол-во лайков: ' . $average);
         }
         return Command::SUCCESS;

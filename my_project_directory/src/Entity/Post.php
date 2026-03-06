@@ -5,6 +5,7 @@ namespace App\Entity;
 use App\Repository\PostRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
+use Doctrine\Common\Collections\Criteria;
 use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity(repositoryClass: PostRepository::class)]
@@ -75,4 +76,30 @@ class Post
 
         return $this;
     }
+
+    public function filterComment(): Collection
+    {
+
+        $criteria = Criteria::create()
+            ->where(Criteria::expr()->eq('isApproved', false));
+
+        $unapprovedComments = $this->comments->matching($criteria);
+
+        foreach ($unapprovedComments as $comment) {
+            $this->comments->removeElement($comment);
+        }
+
+        return $this->comments;
+    }
+
+    public function averageComment(): float
+    {
+        $totalLikes = 0;
+        foreach ($this->comments as $comment) {
+            $totalLikes += $comment->getLikes();
+        }
+        $average = $totalLikes / $this->comments->count();
+        return $average;
+    }
+
 }
